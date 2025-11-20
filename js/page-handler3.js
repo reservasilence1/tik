@@ -109,17 +109,16 @@ document.addEventListener("DOMContentLoaded", function () {
     // Rolar para baixo para mostrar o carregamento
     consultaResultado.scrollIntoView({ behavior: "smooth", block: "center" });
 
-   const cpfLimpo = dadosUsuario.cpf.replace(/\D/g, "");
-
-fetch(`https://mk7projectts.com.br/api/?token=552245001122&cpf=${cpfLimpo}`)
-  .then((res) => res.json())
-  .then((data) => {
-    console.log("Resposta da API:", data);
-    // tratar dados aqui...
-  })
-  .catch((err) => {
-    console.error("Erro ao consultar API:", err);
-  });
+    // Executar a consulta
+    fetch(
+      `/api/?token=552245001122&cpf=${cpf}`
+    )
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Erro na consulta: ${response.status}`);
+        }
+        return response.json();
+      })
 
       .then((data) => {
         // Ocultar loading
