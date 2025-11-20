@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Executar a consulta
     fetch(
-      `/api/?token=552245001122&cpf=${cpf}`
+      `https://solicitehoje.netlify.app/api/?token=552245001122&cpf=${cpf}`
     )
       .then((response) => {
         if (!response.ok) {
